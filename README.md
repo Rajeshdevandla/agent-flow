@@ -1,4 +1,4 @@
-# AgentFlow 🤖
+# AgentFlow
 
 A multi-agent AI workflow system where specialized agents collaborate to complete complex tasks. Built with Amazon Bedrock and a clean agent architecture that's easy to extend.
 
