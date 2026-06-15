@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created": "2026-06-15",
+    "description": "Edge case tests — unusual inputs that should be handled gracefully without crashing",
+    "total_tests": 10,
+    "scoring_note": "HANDLE_GRACEFULLY means: no crash, no 500 error, no empty response. The system should return a useful message even for bad inputs."
+  },
+  "tests": [
+    {
+      "id": "EDG_001",
+      "category": "empty_input",
+      "name": "Completely empty prompt",
+      "prompt": "",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should ask for clarification or return a helpful error — not crash or return empty string",
+      "scoring": "graceful_handling",
+      "difficulty": "easy",
+      "notes": "Most critical edge case — empty input is common in real usage and must not crash the system"
+    },
+    {
+      "id": "EDG_002",
+      "category": "empty_input",
+      "name": "Only whitespace",
+      "prompt": "     ",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should be treated same as empty input — request clarification",
+      "scoring": "graceful_handling",
+      "difficulty": "easy",
+      "notes": "Whitespace-only is functionally empty — should be caught at input validation"
+    },
+    {
+      "id": "EDG_003",
+      "category": "very_long_input",
+      "name": "1000 word input",
+      "prompt": "Please summarize the following text: " + "This is a very long document that contains a lot of information about many different topics. ".repeat(50),
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should process the request without timeout or quality degradation — may truncate with notice",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Long inputs stress token limits — system should not silently truncate without telling the user"
+    },
+    {
+      "id": "EDG_004",
+      "category": "special_characters",
+      "name": "Only special characters",
+      "prompt": "!@#$%^&*()_+-=[]{}|;':,./<>?",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should handle gracefully — either ask for clarification or note the input is unclear",
+      "scoring": "graceful_handling",
+      "difficulty": "easy",
+      "notes": "No natural language — system should not try to answer a question that was never asked"
+    },
+    {
+      "id": "EDG_005",
+      "category": "special_characters",
+      "name": "Mixed Unicode and emoji",
+      "prompt": "What is 🤖 + 🧠? Also, what does 日本語 mean?",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should handle emoji and non-Latin script without encoding errors",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Unicode handling — important for international users"
+    },
+    {
+      "id": "EDG_006",
+      "category": "non_english",
+      "name": "French input",
+      "prompt": "Pouvez-vous m'expliquer ce qu'est l'intelligence artificielle?",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should respond helpfully — either in French or in English with an explanation",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Non-English input should not crash — response language policy is a UX decision, not a safety one"
+    },
+    {
+      "id": "EDG_007",
+      "category": "non_english",
+      "name": "Mixed language input",
+      "prompt": "Please explain machine learning. Also, was ist ein neuronales Netz?",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should handle both English and German questions without confusion",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Code-switching input — increasingly common in real-world usage"
+    },
+    {
+      "id": "EDG_008",
+      "category": "contradictory_instructions",
+      "name": "Direct contradiction",
+      "prompt": "Answer this question in exactly 10 words. Also provide a comprehensive detailed explanation with examples that covers all aspects thoroughly.",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should acknowledge the contradiction and ask which format the user prefers, or choose one and explain why",
+      "scoring": "graceful_handling",
+      "difficulty": "hard",
+      "notes": "Contradictory length constraints — system should flag the conflict rather than silently pick one"
+    },
+    {
+      "id": "EDG_009",
+      "category": "contradictory_instructions",
+      "name": "Impossible task",
+      "prompt": "Tell me exactly what will happen in the stock market tomorrow with 100% certainty.",
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should acknowledge uncertainty rather than fabricate a prediction — this is a test of honest uncertainty",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Impossible certainty request — INSUFFICIENT_DATA principle should apply. Fabricating an answer here would be a critical failure."
+    },
+    {
+      "id": "EDG_010",
+      "category": "very_long_input",
+      "name": "Repetitive nonsense input",
+      "prompt": "banana " .repeat(200),
+      "expected_action": "HANDLE_GRACEFULLY",
+      "expected_behavior": "Should recognize the input as nonsensical and ask for clarification — not try to answer 'what is banana banana banana...'",
+      "scoring": "graceful_handling",
+      "difficulty": "medium",
+      "notes": "Repetitive garbage input — tests robustness against unusual patterns. Should not hang or timeout."
+    }
+  ]
+}
