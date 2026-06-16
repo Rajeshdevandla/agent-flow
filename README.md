@@ -5,14 +5,16 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Anthropic Claude](https://img.shields.io/badge/powered%20by-Anthropic%20Claude-orange.svg)](https://anthropic.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)](#)
+[![Eval Score](https://img.shields.io/badge/eval%20score-78.6%25-yellow.svg)](docs/eval_report.md)
 
 ---
 
 ## Recruiter Quick Summary
 
-- **Constitutional AI safety layer** — 10 principles with severity-based blocking (CRITICAL/HIGH/MEDIUM), runs on every single response before the user sees it
-- **Full decision audit trail** — every agent choice logged with reasoning, confidence score, and token count; nothing is a black box
-- **Systematic eval framework** — 55 test cases across accuracy, safety, consistency, and edge cases with honest results (78.6% overall — not inflated)
+- **Constitutional AI safety layer** — 10 numbered principles with severity-based blocking (CRITICAL/HIGH/MEDIUM), runs on every single response before the user sees it; violations are traceable by principle ID in decision logs
+- **Full decision audit trail** — every agent choice logged with reasoning, confidence score, and token count; nothing is a black box; when something goes wrong you can trace which agent made which decision
+- **Systematic eval framework** — 55 test cases across accuracy, safety, consistency, and edge cases; honest C+ result (78.6%) with every failure documented in [docs/eval_report.md](docs/eval_report.md)
 
 ---
 
@@ -252,8 +254,8 @@ Three design decisions in this system are directly relevant to building safer AI
 
 | Agent | Role | Key Design Decision |
 |---|---|---|
-| PlannerAgent | Decomposes task into 7 subtasks | 7-step limit forces consolidation; confidence < 0.6 flags ambiguity |
-| ResearcherAgent | Gathers and labels findings | Explicit source_type field prevents confident hallucination |
+| PlannerAgent | Decomposes task into ≤7 subtasks | 7-step limit forces consolidation; confidence < 0.6 flags ambiguity |
+| ResearcherAgent | Gathers and labels findings | Explicit `source_type` field prevents confident hallucination |
 | SummarizerAgent | Synthesizes to 150-500 words | Weakest-link confidence scoring; uncertainty propagation enforced |
 | CriticAgent | Reviews for factual errors | PASS/REVISE/REJECT with explicit thresholds; max 2 revision cycles |
 | SafetyAgent | Constitutional AI check | 10 numbered principles; CRITICAL severity stops workflow immediately |
@@ -286,12 +288,13 @@ agent-flow/
 │       └── edge_cases.json         (10 tests)
 ├── docs/
 │   ├── architecture.md
-│   ├── prompt_engineering.md  <- prompt decisions + rationale
-│   ├── eval_report.md         <- full evaluation report
+│   ├── prompt_engineering.md  ← prompt decisions + rationale
+│   ├── eval_report.md         ← full evaluation report
 │   └── limitations.md
 ├── tests/
-│   ├── test_orchestrator.py
-│   └── test_safety.py
+│   ├── test_agents.py          (agent unit tests)
+│   ├── test_orchestrator.py    (20 orchestrator tests)
+│   └── test_safety.py          (30 safety/constitutional AI tests)
 ├── frontend/               # Streamlit UI
 ├── api/                    # FastAPI endpoints
 ├── memory/                 # Conversation memory
@@ -315,6 +318,9 @@ python -m orchestrator.workflow
 
 # Run evaluations
 python -m evals.run_evals
+
+# Run tests (no API calls required — fully mocked)
+pytest tests/ -v
 
 # Launch Streamlit UI
 streamlit run frontend/app.py
