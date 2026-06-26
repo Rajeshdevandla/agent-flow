@@ -10,6 +10,14 @@
 
 ---
 
+## Live Demo
+
+> 🚀 **[Coming soon — deploying to Hugging Face Spaces / Streamlit Cloud]**
+>
+> To run locally, follow the [Quick Start](#quick-start) below.
+
+---
+
 ## Recruiter Quick Summary
 
 - **Constitutional AI safety layer** — 10 numbered principles with severity-based blocking (CRITICAL/HIGH/MEDIUM), runs on every single response before the user sees it; violations are traceable by principle ID in decision logs
@@ -354,6 +362,14 @@ All agents use `claude-opus-4-5` via the Anthropic Python SDK. No Amazon Bedrock
 import anthropic
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 ```
+
+---
+
+
+## Related Projects
+
+- [AskDocs AI](https://github.com/Rajeshdevandla/askdocs-ai) — PDF RAG chatbot using Amazon Bedrock and FAISS
+- [AI Document Intelligence Platform](https://github.com/Rajeshdevandla/ai-document-intelligence-platform) — Enterprise document processing with Java microservices + OCR
 
 ---
 
