@@ -12,7 +12,7 @@
 
 ## Live Demo
 
-> 🚀 **[Coming soon — deploying to Hugging Face Spaces / Streamlit Cloud]**
+>  **[Coming soon — deploying to Hugging Face Spaces / Streamlit Cloud]**
 >
 > To run locally, follow the [Quick Start](#quick-start) below.
 
