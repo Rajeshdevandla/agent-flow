@@ -37,6 +37,13 @@ class EvaluatorAgent(BaseAgent):
 
     GRADE_THRESHOLDS = {"A": 90, "B": 80, "C": 70, "D": 60, "F": 0}
 
+    def run(self, task: str, final_response: str, workflow_results: list) -> dict:
+        """Compatibility entry point returning the quality evaluation."""
+        result = self.score_quality(task, final_response)
+        if "overall" not in result:
+            result["overall"] = result.get("total_score", 0)
+        return result
+
     def evaluate_workflow(self, task: str, agent_outputs: list, final_response: str,
                           time_taken_ms: float = 0, tokens_used: int = 0) -> dict:
         """Main evaluation method. Scores the entire workflow run."""
