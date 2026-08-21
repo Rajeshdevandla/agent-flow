@@ -53,6 +53,10 @@ class SummarizerAgent(BaseAgent):
 
     USER_TYPES = ["technical", "non-technical", "researcher"]
 
+    def run(self, task: str, research: dict, user_type: str = "non-technical") -> dict:
+        """Compatibility entry point used by the orchestration pipeline."""
+        return self.summarize(research, user_type=user_type)
+
     def summarize(
         self,
         research_findings: dict,

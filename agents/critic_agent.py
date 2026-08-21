@@ -79,6 +79,10 @@ class CriticAgent(BaseAgent):
     PASS_THRESHOLD = 75  # Minimum score to pass
     REVISION_THRESHOLD = 50  # Below this = FAIL, above = NEEDS_REVISION
 
+    def run(self, content: str, original_task: str = "Review generated content") -> dict:
+        """Compatibility entry point used by the orchestration pipeline."""
+        return self.critique(content, original_task)
+
     def critique(self, response: str, original_task: str) -> dict:
         """
         Reviews an agent's response against the original task.

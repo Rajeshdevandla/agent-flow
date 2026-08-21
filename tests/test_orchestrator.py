@@ -278,7 +278,7 @@ class MockOrchestrator:
                 else:  # REVISE
                     revision_count += 1
                     result.revision_count = revision_count
-                    if revision_count > self.MAX_REVISIONS:
+                    if revision_count >= self.MAX_REVISIONS:
                         self.logger.log("CriticAgent", "MAX_REVISIONS_REACHED", {"count": revision_count})
                         break
 
