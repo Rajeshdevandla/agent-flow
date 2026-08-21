@@ -5,7 +5,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Anthropic Claude](https://img.shields.io/badge/powered%20by-Anthropic%20Claude-orange.svg)](https://anthropic.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen.svg)](#)
+[![CI](https://github.com/Rajeshdevandla/agent-flow/actions/workflows/ci.yml/badge.svg)](https://github.com/Rajeshdevandla/agent-flow/actions/workflows/ci.yml)
 [![Eval Score](https://img.shields.io/badge/eval%20score-78.6%25-yellow.svg)](docs/eval_report.md)
 
 ---
