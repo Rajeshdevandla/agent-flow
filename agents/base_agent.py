@@ -16,6 +16,13 @@ class BaseAgent:
     MODEL = "claude-opus-4-5"
     MAX_TOKENS = 4096
     MAX_RETRIES = 3
+    RETRYABLE_STATUS_CODES = {408, 409, 429}
+    RETRYABLE_ERROR_NAMES = {
+        "APIConnectionError",
+        "APITimeoutError",
+        "InternalServerError",
+        "RateLimitError",
+    }
 
     def __init__(
         self,
@@ -25,6 +32,9 @@ class BaseAgent:
         logger: Optional[Any] = None,
         config: Optional[dict] = None,
     ):
+        if max_retries < 1:
+            raise ValueError("max_retries must be at least 1")
+
         self.client = client or anthropic.Anthropic()
         self.model = model or self.MODEL
         self.max_retries = max_retries
@@ -33,6 +43,49 @@ class BaseAgent:
         self.call_history = []
         self.total_tokens_used = 0
         self._log = logging.getLogger(self.__class__.__name__)
+
+    @classmethod
+    def _is_retryable_error(cls, error: Exception) -> bool:
+        """Return whether an API failure is likely to succeed when retried."""
+        if isinstance(error, (ConnectionError, TimeoutError)):
+            return True
+
+        status_code = getattr(error, "status_code", None)
+        if isinstance(status_code, int):
+            return (
+                status_code in cls.RETRYABLE_STATUS_CODES
+                or 500 <= status_code < 600
+            )
+
+        # Keep this compatible with supported Anthropic SDK versions without
+        # requiring tests to construct SDK exceptions with HTTP request objects.
+        return error.__class__.__name__ in cls.RETRYABLE_ERROR_NAMES
+
+    def _record_call(
+        self,
+        *,
+        started: float,
+        attempt: int,
+        success: bool,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        error: Optional[Exception] = None,
+    ) -> None:
+        record = {
+            "timestamp": datetime.now().isoformat(),
+            "agent": self.__class__.__name__,
+            "attempt": attempt,
+            "time_ms": round((time.time() - started) * 1000, 2),
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "success": success,
+        }
+        if error is not None:
+            record["error_type"] = error.__class__.__name__
+
+        self.call_history.append(record)
+        if self.logger:
+            self.logger.log_api_call(record)
 
     def call_claude(
         self,
@@ -43,7 +96,7 @@ class BaseAgent:
         temperature: float = 0.3,
         max_tokens: Optional[int] = None,
     ) -> str:
-        """Call Claude and retry transient failures."""
+        """Call Claude, retrying only failures that are safe to retry."""
         user_message = user if user is not None else (prompt or "")
         token_limit = max_tokens or self.MAX_TOKENS
         started = time.time()
@@ -67,25 +120,30 @@ class BaseAgent:
                     output_tokens = 0
                 self.total_tokens_used += input_tokens + output_tokens
 
-                record = {
-                    "timestamp": datetime.now().isoformat(),
-                    "agent": self.__class__.__name__,
-                    "attempt": attempt,
-                    "time_ms": round((time.time() - started) * 1000, 2),
-                    "input_tokens": input_tokens,
-                    "output_tokens": output_tokens,
-                    "success": True,
-                }
-                self.call_history.append(record)
-                if self.logger:
-                    self.logger.log_api_call(record)
+                self._record_call(
+                    started=started,
+                    attempt=attempt,
+                    success=True,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                )
                 return content
-            except Exception:
-                if attempt >= self.max_retries:
+            except Exception as error:
+                self._record_call(
+                    started=started,
+                    attempt=attempt,
+                    success=False,
+                    error=error,
+                )
+                retryable = self._is_retryable_error(error)
+                if not retryable or attempt >= self.max_retries:
                     raise
+
                 wait_seconds = 2 ** (attempt - 1)
                 self._log.warning(
-                    "Agent call failed; retrying in %ss (attempt %s/%s)",
+                    "Transient agent call failure (%s); retrying in %ss "
+                    "(attempt %s/%s)",
+                    error.__class__.__name__,
                     wait_seconds,
                     attempt,
                     self.max_retries,
