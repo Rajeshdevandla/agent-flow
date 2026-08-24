@@ -9,7 +9,7 @@ uvicorn[standard]>=0.32.0
 python-multipart>=0.0.12
 
 # Frontend
-streamlit>=1.40.0
+streamlit>=1.62.0
 
 # Environment
 python-dotenv>=1.0.0
