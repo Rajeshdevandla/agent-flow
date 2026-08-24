@@ -50,7 +50,7 @@ class TestBaseAgent:
         from agents.base_agent import BaseAgent
 
         mock_client = MagicMock()
-        mock_client.messages.create.side_effect = Exception("API Error")
+        mock_client.messages.create.side_effect = TimeoutError("API timeout")
 
         agent = BaseAgent(client=mock_client, model="claude-opus-4-5", max_retries=2)
 
