@@ -1,7 +1,7 @@
 # AgentFlow v2.0 Dependencies
 
 # Anthropic SDK
-anthropic>=0.40.0
+anthropic>=1.0.0
 
 # API Framework
 fastapi>=0.115.0
