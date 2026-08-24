@@ -118,7 +118,8 @@ Return JSON: {"compliant": bool, "violations": [{"principle_id": int,
             return response
 
         violations_text = chr(10).join(
-            f"- Principle {v.get(chr(39)principle_id{chr(39)})}: {v.get(chr(39)violation{chr(39)})}. Fix: {v.get(chr(39)fix{chr(39)})}"
+            f"- Principle {v.get('principle_id')}: {v.get('violation')}. "
+            f"Fix: {v.get('fix')}"
             for v in violations
         )
 
