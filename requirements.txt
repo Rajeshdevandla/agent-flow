@@ -22,7 +22,7 @@ aiofiles>=24.1.0
 
 # Evaluation & Testing
 pytest>=8.3.0
-pytest-asyncio>=0.24.0
+pytest-asyncio>=1.4.0
 pytest-cov>=6.0.0
 
 # Logging & Monitoring
