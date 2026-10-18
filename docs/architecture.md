@@ -96,7 +96,9 @@ Each agent follows the same base pattern:
 
 **DecisionLogger** (`decision_logger.py`)
 - Logs every agent decision with timestamp and metadata
-- Persistent JSON log for audit trails
+- Per-workflow, in-memory audit records with JSON-serializable session reports
+- Reports must be explicitly exported by the caller to survive process restarts;
+  prompts and outputs are not automatically written to disk
 - Query API for filtering logs
 - Design decision: Full decision logging is essential for debugging multi-agent systems
 
