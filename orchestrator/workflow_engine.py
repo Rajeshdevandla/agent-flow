@@ -103,7 +103,7 @@ class WorkflowEngine:
             print("Step 5/6: SafetyAgent...")
             safety_result = self._run_with_recovery(
                 "safety",
-                self.safety.check,
+                self.safety.run,
                 final_summary
             )
             self.agent_outputs.append({"agent": "SafetyAgent", "output": safety_result})
