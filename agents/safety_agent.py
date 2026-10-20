@@ -1,5 +1,7 @@
 """Constitutional safety agent for reviewing generated content."""
 
+import math
+
 from agents.base_agent import BaseAgent
 
 
@@ -16,11 +18,30 @@ Block content that meaningfully enables harm.
     def review(self, content: str) -> dict:
         response = self.call_claude(system=self.SYSTEM_PROMPT, user=content)
         result = self.parse_json(response)
-        if "error" in result:
+        if not self._valid_review(result):
             return {
-                "action": "WARN_USER",
-                "issues": ["Safety review could not be parsed"],
-                "score": 50,
+                "action": "BLOCK",
+                "issues": ["Safety review was invalid; response withheld."],
+                "score": 0,
                 "violations": [],
+                "error": "INVALID_SAFETY_REVIEW",
             }
         return result
+
+    @staticmethod
+    def _valid_review(result) -> bool:
+        """Only a complete, well-typed review can authorize a response."""
+        if not isinstance(result, dict) or "error" in result:
+            return False
+        if result.get("action") not in ("PASS", "WARN_USER", "BLOCK"):
+            return False
+        score = result.get("score")
+        if type(score) not in (int, float) or not 0 <= score <= 100:
+            return False
+        if not math.isfinite(score):
+            return False
+        return all(
+            isinstance(result.get(field), list)
+            and all(isinstance(item, str) for item in result[field])
+            for field in ("issues", "violations")
+        )
