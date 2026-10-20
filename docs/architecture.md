@@ -77,6 +77,10 @@ Each agent follows the same base pattern:
 - Constitutional AI-inspired safety layer
 - Evaluates 10 principles (5 CRITICAL, 3 HIGH, 2 MEDIUM)
 - Three possible actions: PASS, WARN_USER, BLOCK
+- Requires a known action, a finite numeric score from 0-100, and string lists
+  for issues and violations. Invalid reviews block the candidate response.
+- The production engine also blocks when the safety agent raises an exception;
+  evaluation is skipped and unchecked content is withheld.
 - Runs on EVERY response, no exceptions
 - Design decision: Safety must be non-optional and always last before user
 

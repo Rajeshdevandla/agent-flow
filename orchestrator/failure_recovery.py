@@ -22,7 +22,7 @@ class FailureRecovery:
     - researcher: Return empty findings with warning
     - summarizer: Return raw research text
     - critic: Skip critique and pass through
-    - safety: Default to WARN_USER (err on side of caution)
+    - safety: Block unchecked content when the review fails
     - evaluator: Return zero scores
     """
 
@@ -136,14 +136,16 @@ class FailureRecovery:
     def _recover_safety(self, error: str, context: str) -> dict:
         """
         Fallback when SafetyAgent fails.
-        Err on the side of caution - warn the user.
+        Withhold content that has not received a valid safety review.
         """
         return {
             "safe": False,
             "violations": ["Safety check failed due to error"],
-            "severity": "MEDIUM",
-            "action": "WARN_USER",
-            "reason": f"Safety check failed: {error[:100]}. Manual review recommended.",
+            "severity": "HIGH",
+            "action": "BLOCK",
+            "issues": ["Safety review failed; response withheld."],
+            "score": 0,
+            "reason": "Safety review failed; retry the request.",
             "violated_principles": [],
             "is_recovery": True
         }
