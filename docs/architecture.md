@@ -97,6 +97,10 @@ Each agent follows the same base pattern:
 - Handles agent-to-agent data passing
 - Manages critic revision loop
 - Routes to FailureRecovery on agent failure
+- Each sequential run gets a new workflow ID, audit logger, recovery history,
+  and agent usage counters while preserving configured agents and model clients.
+  Returned reports remain independent snapshots. Use separate engine instances
+  for concurrent requests.
 
 **DecisionLogger** (`decision_logger.py`)
 - Logs every agent decision with timestamp and metadata

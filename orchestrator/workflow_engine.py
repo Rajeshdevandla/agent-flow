@@ -59,7 +59,17 @@ class WorkflowEngine:
         """
         Main entry point. Runs the complete 6-agent pipeline.
         Returns final response with full audit trail.
+        Reuse an engine sequentially; concurrent requests need separate engines.
         """
+        self.logger = DecisionLogger()
+        self.recovery = FailureRecovery()
+        for agent in (
+            self.planner, self.researcher, self.summarizer,
+            self.critic, self.safety, self.evaluator
+        ):
+            agent.logger = self.logger
+            agent.call_history = []
+            agent.total_tokens_used = 0
         self.start_time = time.time()
         self.agent_outputs = []
 
