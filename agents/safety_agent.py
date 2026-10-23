@@ -29,6 +29,16 @@ Block content that meaningfully enables harm.
         return result
 
     @staticmethod
+    def get_user_message(result: dict) -> str:
+        """Format warning details from a validated safety review for callers."""
+        if result.get("action") != "WARN_USER":
+            return ""
+        details = " ".join(issue.strip() for issue in result["issues"] if issue.strip())
+        return "Safety warning: " + (
+            details or "Review this response carefully before using it."
+        )
+
+    @staticmethod
     def _valid_review(result) -> bool:
         """Only a complete, well-typed review can authorize a response."""
         if not isinstance(result, dict) or "error" in result:

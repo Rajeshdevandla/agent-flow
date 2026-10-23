@@ -77,6 +77,10 @@ Each agent follows the same base pattern:
 - Constitutional AI-inspired safety layer
 - Evaluates 10 principles (5 CRITICAL, 3 HIGH, 2 MEDIUM)
 - Three possible actions: PASS, WARN_USER, BLOCK
+- WorkflowEngine returns WARN_USER details in its `warnings` string alongside
+  the candidate response. Empty or whitespace-only issues produce a general
+  caution message; PASS returns an empty warning string. The API continues to
+  expose the structured review in `safety_report`.
 - Requires a known action, a finite numeric score from 0-100, and string lists
   for issues and violations. Invalid reviews block the candidate response.
 - The production engine also blocks when the safety agent raises an exception;
