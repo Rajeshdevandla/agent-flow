@@ -152,7 +152,7 @@ class WorkflowEngine:
                 "evaluation": evaluation,
                 "decision_log": self.logger.generate_session_report(),
                 "plan": plan,
-                "warnings": self.safety.get_user_message(safety_result) if hasattr(self.safety, 'get_user_message') else ""
+                "warnings": self.safety.get_user_message(safety_result)
             }
 
         except Exception as e:
