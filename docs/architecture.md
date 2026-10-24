@@ -109,6 +109,9 @@ Each agent follows the same base pattern:
 **DecisionLogger** (`decision_logger.py`)
 - Logs every agent decision with timestamp and metadata
 - Per-workflow, in-memory audit records with JSON-serializable session reports
+- API workflow responses use the logger's UUID-based `wf_` identifier, so
+  requests started within the same second have distinct audit identities.
+  Treat workflow IDs as opaque strings, not timestamps.
 - Reports must be explicitly exported by the caller to survive process restarts;
   prompts and outputs are not automatically written to disk
 - Query API for filtering logs

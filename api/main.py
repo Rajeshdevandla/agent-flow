@@ -154,9 +154,8 @@ async def run_workflow(request: WorkflowRequest):
     """
     client = get_client()
     start_time = time.time()
-    workflow_id = f"wf_{int(time.time())}"
-
-    logger = DecisionLogger(workflow_id=workflow_id)
+    logger = DecisionLogger()
+    workflow_id = logger.workflow_id
     agent_results = []
     total_tokens = 0
 
