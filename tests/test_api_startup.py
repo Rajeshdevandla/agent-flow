@@ -22,7 +22,7 @@ def test_api_starts_without_credentials_and_reports_degraded_health(monkeypatch)
         assert health.json()["anthropic_connected"] is False
 
 
-def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
+def workflow_model_client(repeats=1):
     responses = [
         {"steps": [], "confidence": 90},
         {"findings": [], "data_quality": "HIGH"},
@@ -37,8 +37,13 @@ def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
             content=[SimpleNamespace(text=json.dumps(output))],
             usage=SimpleNamespace(input_tokens=10, output_tokens=5),
         )
-        for output in responses
+        for output in responses * repeats
     ]
+    return model_client
+
+
+def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
+    model_client = workflow_model_client()
     monkeypatch.setattr(main, "get_client", lambda: model_client)
     with TestClient(main.app) as client:
         response = client.post("/workflow/run", json={"task": "Explain retrieval"})
@@ -57,3 +62,36 @@ def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
     assert result["safety_report"]["action"] == "PASS"
     assert result["quality_scores"]["total_score"] == 90
     assert model_client.messages.create.call_count == 6
+
+
+def test_workflow_ids_and_audit_records_are_distinct_with_frozen_clock(monkeypatch):
+    model_client = workflow_model_client(repeats=2)
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    monkeypatch.setattr(main, "time", SimpleNamespace(time=lambda: 1792848000.0))
+    loggers = []
+    original_logger = main.DecisionLogger
+
+    class CapturedLogger(original_logger):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            loggers.append(self)
+
+    monkeypatch.setattr(main, "DecisionLogger", CapturedLogger)
+    with TestClient(main.app) as client:
+        responses = [
+            client.post("/workflow/run", json={"task": task})
+            for task in ("Explain retrieval", "Explain embeddings")
+        ]
+
+    assert all(response.status_code == 200 for response in responses)
+    results = [response.json() for response in responses]
+    assert results[0]["workflow_id"] != results[1]["workflow_id"]
+    assert len(loggers) == 2
+    for result, logger in zip(results, loggers):
+        assert result["workflow_id"].startswith("wf_")
+        report = logger.generate_session_report()
+        assert report["workflow_id"] == result["workflow_id"]
+        assert report["event_count"] == 6
+        assert all(e["workflow_id"] == result["workflow_id"] for e in report["events"])
+        assert result["final_response"] == "A grounded summary."
+    assert model_client.messages.create.call_count == 12
