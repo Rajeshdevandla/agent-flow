@@ -1,10 +1,12 @@
 """Exercise the shipped API, not the test-only mock orchestrator."""
 
 import json
+from itertools import product
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
+import pytest
 
 from api import main
 
@@ -95,3 +97,51 @@ def test_workflow_ids_and_audit_records_are_distinct_with_frozen_clock(monkeypat
         assert all(e["workflow_id"] == result["workflow_id"] for e in report["events"])
         assert result["final_response"] == "A grounded summary."
     assert model_client.messages.create.call_count == 12
+
+
+@pytest.mark.parametrize(
+    "options,retry",
+    [(options, False) for options in product((False, True), repeat=3)]
+    + [((True, True, True), True)],
+)
+def test_api_reports_usage_for_executed_agents(monkeypatch, options, retry):
+    model_client = workflow_model_client()
+    responses = list(model_client.messages.create.side_effect)
+    names = [
+        "PlannerAgent",
+        "ResearcherAgent",
+        "SummarizerAgent",
+        "CriticAgent",
+        "SafetyAgent",
+        "EvaluatorAgent",
+    ]
+    enabled = (True, True, True) + options
+    expected = {}
+    selected = []
+    for index, (name, response, active) in enumerate(zip(names, responses, enabled), 1):
+        if active:
+            response.usage = SimpleNamespace(
+                input_tokens=10 * index, output_tokens=index
+            )
+            expected[name] = 11 * index
+            selected.append(response)
+    model_client.messages.create.side_effect = (
+        [TimeoutError("Temporary failure")] if retry else []
+    ) + selected * 2
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    monkeypatch.setattr("agents.base_agent.time.sleep", lambda seconds: None)
+    request = dict(zip(("enable_critic", "enable_safety", "enable_evaluator"), options))
+    with TestClient(main.app) as client:
+        for _ in range(2):
+            response = client.post(
+                "/workflow/run", json={"task": "Explain retrieval", **request}
+            )
+            assert response.status_code == 200, response.text
+            result = response.json()
+            actual = {
+                agent["agent_name"]: agent["tokens_used"]
+                for agent in result["agent_results"]
+            }
+            assert actual == expected
+            assert result["total_tokens"] == sum(expected.values())
+    assert model_client.messages.create.call_count == len(selected) * 2 + int(retry)
