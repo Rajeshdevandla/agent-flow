@@ -157,7 +157,6 @@ async def run_workflow(request: WorkflowRequest):
     logger = DecisionLogger()
     workflow_id = logger.workflow_id
     agent_results = []
-    total_tokens = 0
 
     try:
         # Step 1: PlannerAgent
@@ -168,7 +167,7 @@ async def run_workflow(request: WorkflowRequest):
             status="complete",
             output=plan_result,
             duration=0.0,
-            tokens_used=0
+            tokens_used=planner.total_tokens_used
         ))
         logger.log("PlannerAgent", plan_result)
 
@@ -180,7 +179,7 @@ async def run_workflow(request: WorkflowRequest):
             status="complete",
             output=research_result,
             duration=0.0,
-            tokens_used=0
+            tokens_used=researcher.total_tokens_used
         ))
         logger.log("ResearcherAgent", research_result)
 
@@ -196,7 +195,7 @@ async def run_workflow(request: WorkflowRequest):
             status="complete",
             output=summary_result,
             duration=0.0,
-            tokens_used=0
+            tokens_used=summarizer.total_tokens_used
         ))
         logger.log("SummarizerAgent", summary_result)
 
@@ -212,7 +211,7 @@ async def run_workflow(request: WorkflowRequest):
                 status="complete",
                 output=critic_result,
                 duration=0.0,
-                tokens_used=0
+                tokens_used=critic.total_tokens_used
             ))
             logger.log("CriticAgent", critic_result)
 
@@ -226,7 +225,7 @@ async def run_workflow(request: WorkflowRequest):
                 status="complete",
                 output=safety_result,
                 duration=0.0,
-                tokens_used=0
+                tokens_used=safety.total_tokens_used
             ))
             logger.log("SafetyAgent", safety_result)
 
@@ -251,7 +250,7 @@ async def run_workflow(request: WorkflowRequest):
                 status="complete",
                 output=eval_result,
                 duration=0.0,
-                tokens_used=0
+                tokens_used=evaluator.total_tokens_used
             ))
             logger.log("EvaluatorAgent", eval_result)
 
@@ -264,7 +263,7 @@ async def run_workflow(request: WorkflowRequest):
             safety_report=safety_result,
             quality_scores=eval_result,
             total_duration=total_duration,
-            total_tokens=total_tokens,
+            total_tokens=sum(agent.tokens_used for agent in agent_results),
             workflow_id=workflow_id
         )
 

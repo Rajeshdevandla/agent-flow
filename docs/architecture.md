@@ -192,6 +192,11 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+- API `tokens_used` reports each executed agent's recorded input plus output
+  tokens. `total_tokens` sums those agents, including the evaluator when enabled.
+  Skipped agents contribute nothing and counters are fresh for each request.
+  Failed attempts without usage metadata add no tokens; these counts are
+  observed model usage, not a billing estimate.
 - Typical workflow: 6-12 seconds end-to-end
 - Token usage: ~3,000-8,000 tokens per complete workflow
 - Agent timeout: 60 seconds per agent
