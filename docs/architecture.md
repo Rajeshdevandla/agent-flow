@@ -192,6 +192,11 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+- API agent `duration` and workflow `total_duration` are elapsed seconds
+  measured with a monotonic performance counter. Agent durations cover the
+  complete `run` call, including retries and backoff; the workflow total also
+  includes orchestration overhead after client initialization. Skipped agents
+  have no result entry. Wall-clock changes do not affect these measurements.
 - API `tokens_used` reports each executed agent's recorded input plus output
   tokens. `total_tokens` sums those agents, including the evaluator when enabled.
   Skipped agents contribute nothing and counters are fresh for each request.
