@@ -69,7 +69,11 @@ def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
 def test_workflow_ids_and_audit_records_are_distinct_with_frozen_clock(monkeypatch):
     model_client = workflow_model_client(repeats=2)
     monkeypatch.setattr(main, "get_client", lambda: model_client)
-    monkeypatch.setattr(main, "time", SimpleNamespace(time=lambda: 1792848000.0))
+    monkeypatch.setattr(
+        main,
+        "time",
+        SimpleNamespace(time=lambda: 1792848000.0, perf_counter=lambda: 0.0),
+    )
     loggers = []
     original_logger = main.DecisionLogger
 
@@ -144,4 +148,80 @@ def test_api_reports_usage_for_executed_agents(monkeypatch, options, retry):
             }
             assert actual == expected
             assert result["total_tokens"] == sum(expected.values())
+    assert model_client.messages.create.call_count == len(selected) * 2 + int(retry)
+
+
+@pytest.mark.parametrize(
+    "options,retry",
+    [
+        ((True, True, True), False),
+        ((False, False, False), False),
+        ((True, False, True), False),
+        ((True, True, True), True),
+    ],
+)
+def test_api_measures_agent_durations_with_monotonic_clock(monkeypatch, options, retry):
+    model_client = workflow_model_client()
+    responses = list(model_client.messages.create.side_effect)
+    names = [
+        "PlannerAgent",
+        "ResearcherAgent",
+        "SummarizerAgent",
+        "CriticAgent",
+        "SafetyAgent",
+        "EvaluatorAgent",
+    ]
+    enabled = (True, True, True) + options
+    selected = [
+        (name, response, index / 4)
+        for index, (name, response, active) in enumerate(
+            zip(names, responses, enabled), 1
+        )
+        if active
+    ]
+    clock = SimpleNamespace(elapsed=0.0)
+
+    def advance(seconds):
+        clock.elapsed += seconds
+
+    calls = iter(([None] if retry else []) + selected * 2)
+
+    def respond(**kwargs):
+        item = next(calls)
+        if item is None:
+            advance(0.5)
+            raise TimeoutError("Temporary failure")
+        _, response, duration = item
+        advance(duration)
+        return response
+
+    model_client.messages.create.side_effect = respond
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    monkeypatch.setattr(
+        main,
+        "time",
+        SimpleNamespace(
+            perf_counter=lambda: clock.elapsed,
+            time=lambda: 2000 - clock.elapsed,
+        ),
+    )
+    monkeypatch.setattr("agents.base_agent.time.sleep", advance)
+    request = dict(zip(("enable_critic", "enable_safety", "enable_evaluator"), options))
+    with TestClient(main.app) as client:
+        for request_index in range(2):
+            response = client.post(
+                "/workflow/run", json={"task": "Explain retrieval", **request}
+            )
+            assert response.status_code == 200, response.text
+            result = response.json()
+            expected = {name: duration for name, _, duration in selected}
+            if retry and request_index == 0:
+                expected["PlannerAgent"] += 1.5  # Failed call plus retry backoff.
+            actual = {
+                agent["agent_name"]: agent["duration"]
+                for agent in result["agent_results"]
+            }
+            assert actual == pytest.approx(expected)
+            assert result["total_duration"] == pytest.approx(sum(expected.values()))
+            assert result["final_response"] == "A grounded summary."
     assert model_client.messages.create.call_count == len(selected) * 2 + int(retry)

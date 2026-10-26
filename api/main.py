@@ -153,7 +153,7 @@ async def run_workflow(request: WorkflowRequest):
               -> CriticAgent -> SafetyAgent -> EvaluatorAgent
     """
     client = get_client()
-    start_time = time.time()
+    start_time = time.perf_counter()
     logger = DecisionLogger()
     workflow_id = logger.workflow_id
     agent_results = []
@@ -161,30 +161,33 @@ async def run_workflow(request: WorkflowRequest):
     try:
         # Step 1: PlannerAgent
         planner = PlannerAgent(client=client)
+        agent_started = time.perf_counter()
         plan_result = planner.run(task=request.task)
         agent_results.append(AgentResult(
             agent_name="PlannerAgent",
             status="complete",
             output=plan_result,
-            duration=0.0,
+            duration=time.perf_counter() - agent_started,
             tokens_used=planner.total_tokens_used
         ))
         logger.log("PlannerAgent", plan_result)
 
         # Step 2: ResearcherAgent
         researcher = ResearcherAgent(client=client)
+        agent_started = time.perf_counter()
         research_result = researcher.run(task=request.task, plan=plan_result)
         agent_results.append(AgentResult(
             agent_name="ResearcherAgent",
             status="complete",
             output=research_result,
-            duration=0.0,
+            duration=time.perf_counter() - agent_started,
             tokens_used=researcher.total_tokens_used
         ))
         logger.log("ResearcherAgent", research_result)
 
         # Step 3: SummarizerAgent
         summarizer = SummarizerAgent(client=client)
+        agent_started = time.perf_counter()
         summary_result = summarizer.run(
             task=request.task,
             research=research_result,
@@ -194,7 +197,7 @@ async def run_workflow(request: WorkflowRequest):
             agent_name="SummarizerAgent",
             status="complete",
             output=summary_result,
-            duration=0.0,
+            duration=time.perf_counter() - agent_started,
             tokens_used=summarizer.total_tokens_used
         ))
         logger.log("SummarizerAgent", summary_result)
@@ -205,12 +208,13 @@ async def run_workflow(request: WorkflowRequest):
         critic_result = {}
         if request.enable_critic:
             critic = CriticAgent(client=client)
+            agent_started = time.perf_counter()
             critic_result = critic.run(content=final_response_text)
             agent_results.append(AgentResult(
                 agent_name="CriticAgent",
                 status="complete",
                 output=critic_result,
-                duration=0.0,
+                duration=time.perf_counter() - agent_started,
                 tokens_used=critic.total_tokens_used
             ))
             logger.log("CriticAgent", critic_result)
@@ -219,12 +223,13 @@ async def run_workflow(request: WorkflowRequest):
         safety_result = {"action": "PASS", "issues": [], "score": 100}
         if request.enable_safety:
             safety = SafetyAgent(client=client)
+            agent_started = time.perf_counter()
             safety_result = safety.run(content=final_response_text)
             agent_results.append(AgentResult(
                 agent_name="SafetyAgent",
                 status="complete",
                 output=safety_result,
-                duration=0.0,
+                duration=time.perf_counter() - agent_started,
                 tokens_used=safety.total_tokens_used
             ))
             logger.log("SafetyAgent", safety_result)
@@ -240,6 +245,7 @@ async def run_workflow(request: WorkflowRequest):
         eval_result = {}
         if request.enable_evaluator:
             evaluator = EvaluatorAgent(client=client)
+            agent_started = time.perf_counter()
             eval_result = evaluator.run(
                 task=request.task,
                 final_response=final_response_text,
@@ -249,12 +255,12 @@ async def run_workflow(request: WorkflowRequest):
                 agent_name="EvaluatorAgent",
                 status="complete",
                 output=eval_result,
-                duration=0.0,
+                duration=time.perf_counter() - agent_started,
                 tokens_used=evaluator.total_tokens_used
             ))
             logger.log("EvaluatorAgent", eval_result)
 
-        total_duration = time.time() - start_time
+        total_duration = time.perf_counter() - start_time
 
         return WorkflowResponse(
             task=request.task,
