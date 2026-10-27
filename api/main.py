@@ -5,6 +5,7 @@ Design decision: FastAPI chosen for async support, automatic OpenAPI docs,
 and type validation with Pydantic.
 """
 
+import logging
 import os
 import time
 from typing import Any
@@ -276,10 +277,13 @@ async def run_workflow(request: WorkflowRequest):
     except HTTPException:
         raise
     except Exception as e:
+        logging.getLogger(__name__).error(
+            "Workflow %s failed (%s)", workflow_id, type(e).__name__
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Workflow error: {str(e)}"
-        )
+            detail="Unable to complete the workflow. Please try again later."
+        ) from None
 
 
 @app.get("/agents", summary="List Available Agents")

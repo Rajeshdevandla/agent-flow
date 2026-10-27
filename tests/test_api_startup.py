@@ -225,3 +225,39 @@ def test_api_measures_agent_durations_with_monotonic_clock(monkeypatch, options,
             assert result["total_duration"] == pytest.approx(sum(expected.values()))
             assert result["final_response"] == "A grounded summary."
     assert model_client.messages.create.call_count == len(selected) * 2 + int(retry)
+
+
+@pytest.mark.parametrize("stage", range(6))
+def test_api_hides_unexpected_model_errors(monkeypatch, caplog, stage):
+    model_client = workflow_model_client()
+    responses = list(model_client.messages.create.side_effect)
+    private_detail = "PRIVATE_PROVIDER_DETAIL token=example-secret /internal/config"
+    model_client.messages.create.side_effect = responses[:stage] + [
+        ValueError(private_detail)
+    ]
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    with TestClient(main.app) as client:
+        response = client.post("/workflow/run", json={"task": "Explain retrieval"})
+    assert response.status_code == 500
+    assert response.json() == {
+        "detail": "Unable to complete the workflow. Please try again later."
+    }
+    assert private_detail not in response.text
+    assert private_detail not in caplog.text
+    assert "ValueError" in caplog.text
+    assert model_client.messages.create.call_count == stage + 1
+
+
+def test_api_preserves_safety_block_response(monkeypatch):
+    model_client = workflow_model_client()
+    responses = list(model_client.messages.create.side_effect)
+    responses[4].content[0].text = json.dumps(
+        {"action": "BLOCK", "issues": ["Unsafe content"], "score": 0, "violations": []}
+    )
+    model_client.messages.create.side_effect = responses
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    with TestClient(main.app) as client:
+        response = client.post("/workflow/run", json={"task": "Explain retrieval"})
+    assert response.status_code == 400
+    assert "Response blocked by SafetyAgent" in response.json()["detail"]
+    assert model_client.messages.create.call_count == 5

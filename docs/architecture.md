@@ -188,6 +188,11 @@ Safety must be the final gate. Critic can improve quality, but safety is non-neg
 
 ## Known Limitations
 
+Unexpected exceptions during API pipeline execution return a generic HTTP 500
+message. The API logs only the workflow ID and exception class, without the
+exception message or traceback. Deliberate HTTP errors, including safety
+blocks, retain their existing status and response.
+
 See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
