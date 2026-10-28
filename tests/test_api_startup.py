@@ -44,14 +44,38 @@ def workflow_model_client(repeats=1):
     return model_client
 
 
-def test_real_workflow_route_runs_all_agents_without_network(monkeypatch):
+@pytest.mark.parametrize("task", ["", "   ", "\t\n\r", "\u00a0\u2003"])
+def test_blank_workflow_task_is_rejected_before_client_creation(monkeypatch, task):
+    model_client = workflow_model_client()
+    get_client = MagicMock(return_value=model_client)
+    monkeypatch.setattr(main, "get_client", get_client)
+    with TestClient(main.app) as client:
+        response = client.post("/workflow/run", json={"task": task})
+
+    assert response.status_code == 422, response.text
+    assert response.json()["detail"][0]["loc"] == ["body", "task"]
+    get_client.assert_not_called()
+    model_client.messages.create.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "task", ["Explain retrieval", "  Explain retrieval\n  in 日本語\n"]
+)
+def test_real_workflow_route_runs_all_agents_without_network(monkeypatch, task):
     model_client = workflow_model_client()
     monkeypatch.setattr(main, "get_client", lambda: model_client)
     with TestClient(main.app) as client:
-        response = client.post("/workflow/run", json={"task": "Explain retrieval"})
+        response = client.post("/workflow/run", json={"task": task})
 
     assert response.status_code == 200, response.text
     result = response.json()
+    assert result["task"] == task
+    assert (
+        task
+        in model_client.messages.create.call_args_list[0].kwargs["messages"][0][
+            "content"
+        ]
+    )
     assert result["final_response"] == "A grounded summary."
     assert [agent["agent_name"] for agent in result["agent_results"]] == [
         "PlannerAgent",
