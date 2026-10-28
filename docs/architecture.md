@@ -188,6 +188,10 @@ Safety must be the final gate. Critic can improve quality, but safety is non-neg
 
 ## Known Limitations
 
+The workflow API rejects empty or whitespace-only tasks with HTTP 422 before
+creating a model client or running agents. Valid task text is preserved exactly,
+including indentation, newlines, and surrounding whitespace.
+
 Unexpected exceptions during API pipeline execution return a generic HTTP 500
 message. The API logs only the workflow ID and exception class, without the
 exception message or traceback. Deliberate HTTP errors, including safety

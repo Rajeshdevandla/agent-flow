@@ -13,7 +13,7 @@ from typing import Any
 import anthropic
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from agents.planner_agent import PlannerAgent
 from agents.researcher_agent import ResearcherAgent
@@ -55,6 +55,13 @@ class WorkflowRequest(BaseModel):
     enable_critic: bool = True
     enable_safety: bool = True
     enable_evaluator: bool = True
+
+    @field_validator("task")
+    @classmethod
+    def require_nonblank_task(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Task must contain non-whitespace characters")
+        return value
 
 
 class AgentResult(BaseModel):
