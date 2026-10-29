@@ -1,7 +1,9 @@
 """Exercise the shipped API, not the test-only mock orchestrator."""
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from itertools import product
+from threading import Event
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -42,6 +44,48 @@ def workflow_model_client(repeats=1):
         for output in responses * repeats
     ]
     return model_client
+
+
+@pytest.mark.parametrize("path", ["/workflow/run", "/health"])
+def test_slow_model_call_does_not_block_other_requests(monkeypatch, path):
+    model_client = workflow_model_client()
+    responses = iter(model_client.messages.create.side_effect)
+    entered = Event()
+    release = Event()
+
+    def blocked_model_call(**kwargs):
+        entered.set()
+        if not release.wait(timeout=10):
+            raise RuntimeError("Test did not release the blocked model call")
+        return next(responses)
+
+    model_client.messages.create.side_effect = blocked_model_call
+    monkeypatch.setattr(main, "get_client", lambda: model_client)
+    with TestClient(main.app) as client, ThreadPoolExecutor(max_workers=2) as pool:
+        if path == "/workflow/run":
+            slow_request = pool.submit(
+                client.post, path, json={"task": "Explain retrieval"}
+            )
+        else:
+            slow_request = pool.submit(client.get, path)
+        try:
+            assert entered.wait(timeout=5), "Model call never started"
+            root_request = pool.submit(client.get, "/")
+            response = root_request.result(timeout=2)
+            assert response.status_code == 200
+            assert response.json()["name"] == "AgentFlow v2.0 API"
+            assert not slow_request.done()
+        finally:
+            release.set()
+
+        result = slow_request.result(timeout=5)
+        assert result.status_code == 200, result.text
+        if path == "/workflow/run":
+            assert result.json()["final_response"] == "A grounded summary."
+            assert model_client.messages.create.call_count == 6
+        else:
+            assert result.json()["anthropic_connected"] is True
+            assert model_client.messages.create.call_count == 1
 
 
 @pytest.mark.parametrize("task", ["", "   ", "\t\n\r", "\u00a0\u2003"])
