@@ -121,7 +121,7 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse, summary="Health Check")
-async def health_check():
+def health_check():
     """Check API and Anthropic connection health."""
     agents_available = [
         "PlannerAgent",
@@ -154,7 +154,7 @@ async def health_check():
 
 
 @app.post("/workflow/run", response_model=WorkflowResponse, summary="Run Full Workflow")
-async def run_workflow(request: WorkflowRequest):
+def run_workflow(request: WorkflowRequest):
     """Run the complete 6-agent workflow on a task.
 
     Pipeline: PlannerAgent -> ResearcherAgent -> SummarizerAgent

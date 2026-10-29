@@ -201,6 +201,12 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+- Workflow and provider health-check routes run in FastAPI's worker thread pool
+  because the Anthropic client and agent pipeline are synchronous. A waiting
+  model call does not block the event loop from serving lightweight routes such
+  as `/`. Agents within each workflow still run sequentially. Worker capacity is
+  bounded; this is not a job queue or unlimited concurrency, and cancelling an
+  HTTP request does not guarantee cancellation of an in-flight model call.
 - API agent `duration` and workflow `total_duration` are elapsed seconds
   measured with a monotonic performance counter. Agent durations cover the
   complete `run` call, including retries and backoff; the workflow total also
