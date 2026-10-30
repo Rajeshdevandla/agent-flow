@@ -201,6 +201,12 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+- The API Docker health probe uses `GET /` for process liveness without creating
+  an Anthropic client or making model calls. A healthy container does not imply
+  that the provider is configured or available. `GET /health` remains an explicit
+  provider diagnostic: it makes a model request when credentials are configured
+  and can incur usage. It reports `healthy` or `degraded` in the response body,
+  with HTTP 200 in either case; do not use its HTTP status as a readiness signal.
 - Workflow and provider health-check routes run in FastAPI's worker thread pool
   because the Anthropic client and agent pipeline are synchronous. A waiting
   model call does not block the event loop from serving lightweight routes such
