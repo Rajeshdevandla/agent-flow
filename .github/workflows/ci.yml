@@ -12,11 +12,13 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -34,3 +36,9 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m pytest -q
+
+      - name: Build API image
+        run: docker build --target api --tag agentflow-api:smoke .
+
+      - name: Smoke-test API container without credentials
+        run: bash scripts/smoke_api_container.sh agentflow-api:smoke

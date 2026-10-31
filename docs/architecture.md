@@ -201,6 +201,21 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+CI builds the `api` Docker target and runs its actual entrypoint and health check
+inside the required `test` job. The smoke container has no external network and
+an empty `ANTHROPIC_API_KEY`. It must become Docker-healthy within 120 seconds,
+serve repeated root requests, and report degraded provider diagnostics. Failure
+prints container logs/state; cleanup removes only the temporary smoke container.
+To reproduce locally with Docker installed:
+
+```bash
+docker build --target api --tag agentflow-api:smoke .
+bash scripts/smoke_api_container.sh agentflow-api:smoke
+```
+
+This checks image startup and local API behavior, not hosted deployment health
+or successful model inference.
+
 - The API Docker health probe uses `GET /` for process liveness without creating
   an Anthropic client or making model calls. A healthy container does not imply
   that the provider is configured or available. `GET /health` remains an explicit
