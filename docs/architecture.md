@@ -201,6 +201,15 @@ See `docs/limitations.md` for honest discussion of system limitations.
 
 ## Performance Characteristics
 
+The shared `.dockerignore` excludes environment files (except `.env.example`),
+common credential paths, Git metadata, local environments, caches, and runtime
+logs from both image targets. CI seeds harmless placeholder files before the
+API build, then checks inside the resulting image that they and `.git` are
+absent while runtime files and the safe environment template remain. The seed
+command refuses to overwrite existing files and is intended for disposable CI
+checkouts. These path exclusions are not a general secret scanner; inject real
+credentials at runtime and never store them in source files.
+
 CI builds the `api` Docker target and runs its actual entrypoint and health check
 inside the required `test` job. The smoke container has no external network and
 an empty `ANTHROPIC_API_KEY`. It must become Docker-healthy within 120 seconds,
