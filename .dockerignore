@@ -1,0 +1,21 @@
+# Credentials and local configuration (keep the documented safe template).
+**/.env
+**/.env.*
+!**/.env.example
+**/.aws
+**/.ssh
+**/.streamlit/secrets.toml
+**/*.pem
+**/*.key
+
+# Repository metadata, local dependencies, caches, and runtime data.
+**/.git
+**/.venv
+**/venv
+**/node_modules
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+logs

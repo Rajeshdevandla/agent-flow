@@ -37,8 +37,14 @@ jobs:
           PYTHONPATH: .
         run: python -m pytest -q
 
+      - name: Seed harmless Docker exclusion fixtures
+        run: python scripts/check_docker_context.py seed
+
       - name: Build API image
         run: docker build --target api --tag agentflow-api:smoke .
+
+      - name: Verify private files are excluded from the image
+        run: docker run --rm --network none --entrypoint python agentflow-api:smoke scripts/check_docker_context.py check
 
       - name: Smoke-test API container without credentials
         run: bash scripts/smoke_api_container.sh agentflow-api:smoke
