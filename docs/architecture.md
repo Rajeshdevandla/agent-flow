@@ -188,6 +188,13 @@ Safety must be the final gate. Critic can improve quality, but safety is non-neg
 
 ## Known Limitations
 
+The public Streamlit demo uses curated examples, not live model inference.
+Completed results persist through ordinary reruns within the current session.
+Selecting a different scenario clears the previous completion; a new session
+starts with waiting cards. Interaction tests run all three scenarios, verify
+their cards/response/metrics, rerun and repeat them, switch scenarios, and check
+session isolation. These tests do not verify a hosted deployment or browser layout.
+
 The workflow API rejects empty or whitespace-only tasks with HTTP 422 before
 creating a model client or running agents. Valid task text is preserved exactly,
 including indentation, newlines, and surrounding whitespace.

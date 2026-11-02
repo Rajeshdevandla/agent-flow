@@ -88,6 +88,8 @@ left, right = st.columns([1, 1.25], gap="large")
 with left:
     st.subheader("Choose a workflow")
     scenario_name = st.selectbox("Example", list(SCENARIOS))
+    if st.session_state.get("completed_demo_scenario") != scenario_name:
+        st.session_state.pop("completed_demo_scenario", None)
     scenario = SCENARIOS[scenario_name]
     st.text_area("Task", scenario["task"], height=120, disabled=True)
     st.text_input("Audience", scenario["audience"], disabled=True)
@@ -112,7 +114,14 @@ if run_demo:
         )
         progress.progress(index / len(AGENTS), text=f"Completed {index} of {len(AGENTS)} agents")
     progress.empty()
+    st.session_state["completed_demo_scenario"] = scenario_name
 
+if st.session_state.get("completed_demo_scenario") == scenario_name:
+    for (agent, output, score), placeholder in zip(scenario["steps"], placeholders):
+        placeholder.markdown(
+            f'<div class="agent-card">✅ <strong>{agent}</strong> — complete · confidence {score}%<br><br>{output}</div>',
+            unsafe_allow_html=True,
+        )
     st.divider()
     st.subheader("Final response")
     st.write(scenario["steps"][2][1])
