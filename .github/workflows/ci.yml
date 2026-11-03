@@ -48,3 +48,12 @@ jobs:
 
       - name: Smoke-test API container without credentials
         run: bash scripts/smoke_api_container.sh agentflow-api:smoke
+
+      - name: Build frontend image
+        run: docker build --target frontend --tag agentflow-frontend:smoke .
+
+      - name: Verify private files are excluded from the frontend image
+        run: docker run --rm --network none --entrypoint python agentflow-frontend:smoke scripts/check_docker_context.py check
+
+      - name: Smoke-test frontend container and demo interactions
+        run: bash scripts/smoke_frontend_container.sh agentflow-frontend:smoke

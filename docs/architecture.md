@@ -232,6 +232,22 @@ bash scripts/smoke_api_container.sh agentflow-api:smoke
 This checks image startup and local API behavior, not hosted deployment health
 or successful model inference.
 
+The same required job also builds the `frontend` target and verifies its private
+file exclusions. Its smoke container runs the shipped Streamlit command without
+external networking or provider credentials, waits for Docker health, checks
+the HTTP health endpoint and page shell, and runs all five demo interaction
+tests against the packaged app inside the container. No host source is mounted.
+Logs/state are printed on failure and the temporary container is removed.
+
+```bash
+docker build --target frontend --tag agentflow-frontend:smoke .
+bash scripts/smoke_frontend_container.sh agentflow-frontend:smoke
+```
+
+The HTTP shell check alone does not prove the demo renders correctly; AppTest
+checks its interactions separately. These checks do not verify browser layout,
+the browser-to-server WebSocket connection, or a hosted deployment.
+
 - The API Docker health probe uses `GET /` for process liveness without creating
   an Anthropic client or making model calls. A healthy container does not imply
   that the provider is configured or available. `GET /health` remains an explicit
