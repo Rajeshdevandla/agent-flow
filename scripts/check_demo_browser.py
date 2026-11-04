@@ -24,6 +24,7 @@ def script_finished(payload):
 
 
 def assert_waiting(page):
+    expect(page.get_by_test_id("stApp")).to_have_attribute("data-test-script-state", "notRunning")
     expect(page.locator(".agent-card")).to_have_count(6)
     expect(page.locator(".agent-card").filter(has_text="waiting")).to_have_count(6)
     expect(page.get_by_role("heading", name="Final response", exact=True)).to_have_count(0)
@@ -31,6 +32,7 @@ def assert_waiting(page):
 
 
 def assert_completed(page, prefix, score):
+    expect(page.get_by_test_id("stApp")).to_have_attribute("data-test-script-state", "notRunning")
     expect(page.locator(".agent-card").filter(has_text="complete · confidence")).to_have_count(6)
     expect(page.get_by_role("heading", name="Final response", exact=True)).to_be_visible()
     # The summary is also present in an agent card; check the standalone output.
@@ -57,9 +59,9 @@ def check_demo(url):
             assert_waiting(page)
             for index, (name, audience, prefix, score) in enumerate(SCENARIOS):
                 if index:
-                    page.get_by_test_id("stSelectbox").get_by_role("button", name="Open", exact=True).click()
+                    page.get_by_role("combobox", name="Example", exact=True).fill(name)
                     with socket.expect_event("framereceived", predicate=script_finished):
-                        page.get_by_test_id("stSelectboxVirtualDropdown").get_by_text(name, exact=True).click()
+                        page.get_by_role("combobox", name="Example", exact=True).press("Enter")
                 expect(page.get_by_label("Audience", exact=True)).to_have_value(audience)
                 assert_waiting(page)
                 with socket.expect_event("framereceived", predicate=script_finished):
@@ -72,9 +74,9 @@ def check_demo(url):
                 assert_completed(page, prefix, score)
                 print(f"Browser scenario and rerun passed: {name}")
             # Returning to a previously completed scenario must clear stale output.
-            page.get_by_test_id("stSelectbox").get_by_role("button", name="Open", exact=True).click()
+            page.get_by_role("combobox", name="Example", exact=True).fill(SCENARIOS[0][0])
             with socket.expect_event("framereceived", predicate=script_finished):
-                page.get_by_test_id("stSelectboxVirtualDropdown").get_by_text(SCENARIOS[0][0], exact=True).click()
+                page.get_by_role("combobox", name="Example", exact=True).press("Enter")
             assert_waiting(page)
             assert not errors, f"Browser JavaScript errors: {errors}"
         except Exception:
