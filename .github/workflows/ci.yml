@@ -57,3 +57,11 @@ jobs:
 
       - name: Smoke-test frontend container and demo interactions
         run: bash scripts/smoke_frontend_container.sh agentflow-frontend:smoke
+
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install -r requirements-browser.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Verify demo through Chromium and the real Streamlit connection
+        run: bash scripts/smoke_browser_container.sh agentflow-frontend:smoke

@@ -1,0 +1,2 @@
+# Test runner only; not installed in either production image.
+playwright==1.64.1
