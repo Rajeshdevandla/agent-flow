@@ -57,9 +57,9 @@ def check_demo(url):
             assert_waiting(page)
             for index, (name, audience, prefix, score) in enumerate(SCENARIOS):
                 if index:
-                    page.get_by_role("combobox").click()
+                    page.get_by_test_id("stSelectbox").get_by_role("button", name="Open", exact=True).click()
                     with socket.expect_event("framereceived", predicate=script_finished):
-                        page.get_by_role("option", name=name, exact=True).click()
+                        page.get_by_test_id("stSelectboxVirtualDropdown").get_by_text(name, exact=True).click()
                 expect(page.get_by_label("Audience", exact=True)).to_have_value(audience)
                 assert_waiting(page)
                 with socket.expect_event("framereceived", predicate=script_finished):
@@ -72,11 +72,14 @@ def check_demo(url):
                 assert_completed(page, prefix, score)
                 print(f"Browser scenario and rerun passed: {name}")
             # Returning to a previously completed scenario must clear stale output.
-            page.get_by_role("combobox").click()
+            page.get_by_test_id("stSelectbox").get_by_role("button", name="Open", exact=True).click()
             with socket.expect_event("framereceived", predicate=script_finished):
-                page.get_by_role("option", name=SCENARIOS[0][0], exact=True).click()
+                page.get_by_test_id("stSelectboxVirtualDropdown").get_by_text(SCENARIOS[0][0], exact=True).click()
             assert_waiting(page)
             assert not errors, f"Browser JavaScript errors: {errors}"
+        except Exception:
+            print("Browser page at failure:", page.locator("body").inner_text())
+            raise
         finally:
             browser.close()
 
