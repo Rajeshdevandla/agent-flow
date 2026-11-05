@@ -79,7 +79,9 @@ def check_demo(url):
                     page.get_by_role("button", name="Run six-agent demo", exact=True).click()
                 assert_completed(page, prefix, score)
                 # Streamlit's rerun shortcut must preserve the completed result.
-                page.get_by_role("heading", name="Final response", exact=True).click()
+                # Keep focus outside inputs without scrolling down to the
+                # result and then back up while the next popup is opening.
+                page.get_by_role("heading", name="Choose a workflow", exact=True).click()
                 with socket.expect_event("framereceived", predicate=script_finished):
                     page.keyboard.press("r")
                 assert_completed(page, prefix, score)
