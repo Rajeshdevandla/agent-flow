@@ -41,7 +41,7 @@ def select_scenario(page, socket, name):
     option = page.get_by_role("option", name=name, exact=True)
     expect(option).to_be_visible()
     with socket.expect_event("framereceived", predicate=script_finished):
-        option.click()
+        selector.press("Enter")
 
 
 def assert_completed(page, prefix, score):
