@@ -31,6 +31,19 @@ def assert_waiting(page):
     expect(page.get_by_test_id("stMetricValue")).to_have_count(0)
 
 
+def select_scenario(page, socket, name):
+    selector = page.get_by_role("combobox", name="Example", exact=True)
+    selector.fill(name)
+    # Editing the search text is not a selection. Explicitly open the list
+    # and commit an option before waiting for the server's rerun.
+    selector.press("ArrowDown")
+    expect(selector).to_have_attribute("aria-expanded", "true")
+    option = page.get_by_role("option", name=name, exact=True)
+    expect(option).to_be_visible()
+    with socket.expect_event("framereceived", predicate=script_finished):
+        option.click()
+
+
 def assert_completed(page, prefix, score):
     expect(page.get_by_test_id("stApp")).to_have_attribute("data-test-script-state", "notRunning")
     expect(page.locator(".agent-card").filter(has_text="complete · confidence")).to_have_count(6)
@@ -59,11 +72,7 @@ def check_demo(url):
             assert_waiting(page)
             for index, (name, audience, prefix, score) in enumerate(SCENARIOS):
                 if index:
-                    page.get_by_role("combobox", name="Example", exact=True).fill(name)
-                    print("Selection DOM:", page.get_by_test_id("stSelectbox").evaluate("el => el.outerHTML"), flush=True)
-                    print("Selection accessibility:", page.locator("body").aria_snapshot(), flush=True)
-                    with socket.expect_event("framereceived", predicate=script_finished):
-                        page.get_by_role("combobox", name="Example", exact=True).press("Enter")
+                    select_scenario(page, socket, name)
                 expect(page.get_by_label("Audience", exact=True)).to_have_value(audience)
                 assert_waiting(page)
                 with socket.expect_event("framereceived", predicate=script_finished):
@@ -76,13 +85,12 @@ def check_demo(url):
                 assert_completed(page, prefix, score)
                 print(f"Browser scenario and rerun passed: {name}")
             # Returning to a previously completed scenario must clear stale output.
-            page.get_by_role("combobox", name="Example", exact=True).fill(SCENARIOS[0][0])
-            with socket.expect_event("framereceived", predicate=script_finished):
-                page.get_by_role("combobox", name="Example", exact=True).press("Enter")
+            select_scenario(page, socket, SCENARIOS[0][0])
             assert_waiting(page)
             assert not errors, f"Browser JavaScript errors: {errors}"
         except Exception:
             print("Browser errors:", errors, flush=True)
+            print("Browser accessibility:", page.locator("body").aria_snapshot(), flush=True)
             print("Browser page at failure:", page.locator("body").inner_text())
             raise
         finally:
