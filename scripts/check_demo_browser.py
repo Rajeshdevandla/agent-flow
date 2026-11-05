@@ -60,6 +60,8 @@ def check_demo(url):
             for index, (name, audience, prefix, score) in enumerate(SCENARIOS):
                 if index:
                     page.get_by_role("combobox", name="Example", exact=True).fill(name)
+                    print("Selection DOM:", page.get_by_test_id("stSelectbox").evaluate("el => el.outerHTML"), flush=True)
+                    print("Selection accessibility:", page.locator("body").aria_snapshot(), flush=True)
                     with socket.expect_event("framereceived", predicate=script_finished):
                         page.get_by_role("combobox", name="Example", exact=True).press("Enter")
                 expect(page.get_by_label("Audience", exact=True)).to_have_value(audience)
@@ -80,6 +82,7 @@ def check_demo(url):
             assert_waiting(page)
             assert not errors, f"Browser JavaScript errors: {errors}"
         except Exception:
+            print("Browser errors:", errors, flush=True)
             print("Browser page at failure:", page.locator("body").inner_text())
             raise
         finally:
