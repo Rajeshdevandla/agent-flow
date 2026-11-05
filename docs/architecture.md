@@ -248,6 +248,27 @@ The HTTP shell check alone does not prove the demo renders correctly; AppTest
 checks its interactions separately. These checks do not verify browser layout,
 the browser-to-server WebSocket connection, or a hosted deployment.
 
+A separate Chromium check in the same required job now connects to the built
+frontend image through a dynamically allocated loopback port. It verifies all
+three scenarios, six completed cards, final output and metrics, persistence
+after real Streamlit reruns, and clearing results when switching scenarios.
+It waits for server rerun completion over the real WebSocket and fails on
+uncaught browser JavaScript errors. No provider key or host source is passed
+to the container; browser dependencies are installed only on the test runner.
+Unlike the isolated smoke check above, this container uses Docker's bridge
+network so the host browser can connect. Cleanup removes the test container.
+
+```bash
+python -m pip install -r requirements.txt -r requirements-browser.txt
+python -m playwright install --with-deps chromium
+docker build --target frontend --tag agentflow-frontend:smoke .
+bash scripts/smoke_browser_container.sh agentflow-frontend:smoke
+```
+
+This verifies the local container's browser flow, not a hosted deployment,
+responsive layout, or live model inference. Full page reloads create a new
+Streamlit session; persistence here means reruns within the existing session.
+
 - The API Docker health probe uses `GET /` for process liveness without creating
   an Anthropic client or making model calls. A healthy container does not imply
   that the provider is configured or available. `GET /health` remains an explicit
