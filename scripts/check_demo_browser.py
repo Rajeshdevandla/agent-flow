@@ -33,15 +33,15 @@ def assert_waiting(page):
 
 def select_scenario(page, socket, name):
     selector = page.get_by_role("combobox", name="Example", exact=True)
-    selector.fill(name)
-    # Editing the search text is not a selection. Explicitly open the list
-    # and commit an option before waiting for the server's rerun.
-    selector.press("ArrowDown")
+    # Open the menu without editing the search input, then click the exact
+    # option. Keyboard focus/highlight can differ from the selected value.
+    selector.click()
     expect(selector).to_have_attribute("aria-expanded", "true")
     option = page.get_by_role("option", name=name, exact=True)
     expect(option).to_be_visible()
     with socket.expect_event("framereceived", predicate=script_finished):
-        selector.press("Enter")
+        option.click()
+    expect(selector).to_have_attribute("aria-expanded", "false")
 
 
 def assert_completed(page, prefix, score):
